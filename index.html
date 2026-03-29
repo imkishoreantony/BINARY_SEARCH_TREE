@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BST Visualizer</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+}
+
+/* Title */
+h1 {
+    margin-top: 20px;
+    font-size: 2.5rem;
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* Container */
+.container {
+    margin: 20px auto;
+    padding: 20px;
+    width: 80%;
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+/* Input */
+input {
+    padding: 10px;
+    width: 300px;
+    border-radius: 8px;
+    border: none;
+    margin: 10px;
+}
+
+/* Buttons */
+button {
+    padding: 10px 15px;
+    margin: 5px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+/* Output */
+#output {
+    margin-top: 15px;
+    font-size: 20px;
+    color: #22c55e;
+}
+
+/* Tree */
+#tree {
+    position: relative;
+    height: 500px;
+}
+
+/* Node */
+.node {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background: #3b82f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.5s;
+}
+
+/* Highlight */
+.highlight {
+    background: gold !important;
+    transform: scale(1.2);
+}
+
+/* Lines */
+.line {
+    position: absolute;
+    height: 2px;
+    background: white;
+    transform-origin: left;
+}
+
+/* Confetti */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: fall 2s linear forwards;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>BST Visualizer 🌳</h1>
+
+<div class="container">
+    <input id="inputValues" placeholder="Enter numbers (e.g. 50,30,70)">
+    <br>
+
+    <button onclick="buildTree()">Build BST</button><br>
+
+    <button onclick="startTraversal('inorder')">Inorder</button>
+    <button onclick="startTraversal('preorder')">Preorder</button>
+    <button onclick="startTraversal('postorder')">Postorder</button>
+
+    <div id="output"></div>
+</div>
+
+<div id="tree"></div>
+
+<script>
+class Node {
+    constructor(value) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+        this.x = 0;
+        this.y = 0;
+    }
+}
+
+let root = null;
+let nodeMap = {};
+
+// Insert
+function insert(root, value) {
+    if (!root) return new Node(value);
+
+    if (value < root.value)
+        root.left = insert(root.left, value);
+    else
+        root.right = insert(root.right, value);
+
+    return root;
+}
+
+// Build Tree
+function buildTree() {
+    document.getElementById("tree").innerHTML = "";
+    document.getElementById("output").innerText = "";
+    root = null;
+    nodeMap = {};
+
+    let values = document.getElementById("inputValues").value
+        .split(',')
+        .map(v => parseInt(v.trim()));
+
+    let delay = 0;
+
+    values.forEach(val => {
+        setTimeout(() => {
+            root = insert(root, val);
+            drawTree();
+        }, delay);
+        delay += 700;
+    });
+}
+
+// Draw Tree
+function drawTree() {
+    const container = document.getElementById("tree");
+    container.innerHTML = "";
+    nodeMap = {};
+
+    function setPos(node, x, y, gap) {
+        if (!node) return;
+        node.x = x;
+        node.y = y;
+
+        setPos(node.left, x - gap, y + 80, gap / 2);
+        setPos(node.right, x + gap, y + 80, gap / 2);
+    }
+
+    setPos(root, 500, 20, 200);
+
+    function draw(node) {
+        if (!node) return;
+
+        let div = document.createElement("div");
+        div.className = "node";
+        div.innerText = node.value;
+        div.style.left = node.x + "px";
+        div.style.top = node.y + "px";
+
+        nodeMap[node.value] = div;
+
+        container.appendChild(div);
+
+        if (node.left) drawLine(node, node.left);
+        if (node.right) drawLine(node, node.right);
+
+        draw(node.left);
+        draw(node.right);
+    }
+
+    function drawLine(p, c) {
+        let line = document.createElement("div");
+        line.className = "line";
+
+        let dx = c.x - p.x;
+        let dy = c.y - p.y;
+
+        let length = Math.sqrt(dx*dx + dy*dy);
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        line.style.width = length + "px";
+        line.style.left = p.x + 20 + "px";
+        line.style.top = p.y + 20 + "px";
+        line.style.transform = `rotate(${angle}deg)`;
+
+        container.appendChild(line);
+    }
+
+    draw(root);
+}
+
+// Traversals
+function inorder(node, res=[]) {
+    if (!node) return res;
+    inorder(node.left, res);
+    res.push(node.value);
+    inorder(node.right, res);
+    return res;
+}
+
+function preorder(node, res=[]) {
+    if (!node) return res;
+    res.push(node.value);
+    preorder(node.left, res);
+    preorder(node.right, res);
+    return res;
+}
+
+function postorder(node, res=[]) {
+    if (!node) return res;
+    postorder(node.left, res);
+    postorder(node.right, res);
+    res.push(node.value);
+    return res;
+}
+
+function startTraversal(type) {
+    let result = [];
+
+    if (type === 'inorder') result = inorder(root);
+    if (type === 'preorder') result = preorder(root);
+    if (type === 'postorder') result = postorder(root);
+
+    animateTraversal(result);
+}
+
+// Confetti
+function celebrate() {
+    for (let i = 0; i < 50; i++) {
+        let c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.background = ["red","blue","yellow","green"][Math.floor(Math.random()*4)];
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 2000);
+    }
+}
+
+// Animation
+function animateTraversal(order) {
+    let i = 0;
+    document.getElementById("output").innerText = "";
+
+    function step() {
+        if (i > 0) nodeMap[order[i-1]].classList.remove("highlight");
+
+        if (i < order.length) {
+            nodeMap[order[i]].classList.add("highlight");
+            i++;
+            setTimeout(step, 600);
+        } else {
+            celebrate();
+            setTimeout(() => {
+                document.getElementById("output").innerText =
+                    "Traversal Result: " + order.join(" ");
+            }, 800);
+        }
+    }
+
+    step();
+}
+</script>
+
+</body>
+</html>
